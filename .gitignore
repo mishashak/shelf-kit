@@ -1,0 +1,11 @@
+# 자격증명은 절대 커밋하지 않습니다.
+.shelf-upload.json
+shelf-credential-*.json
+
+# 서버에서 받아오는 규격 사본(저장할 필요 없음)
+shelf-upload-contract-*.json
+
+node_modules/
+.DS_Store
+Thumbs.db
+desktop.ini
