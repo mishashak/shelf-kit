@@ -19,6 +19,7 @@
 | [CONVENTIONS](CONVENTIONS.md) | 파일명과 버전, 제목, 태그, 열람 범위, 말투, 표기, 외부 금기 |
 | [HTML-DOCS](HTML-DOCS.md) | HTML 문서의 기술 규약. 자기완결, 뷰어 함정, 색 절제, 모바일 |
 | [COMPARISON](COMPARISON.md) | 둘 이상을 나란히 놓는 순간의 설계 |
+| [SHELF-ADMIN](SHELF-ADMIN.md) | 꽂이의 접근권한과 관리(등급, 소속, 열람 범위, 관리 화면) |
 
 ---
 
