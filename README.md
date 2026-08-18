@@ -8,10 +8,25 @@
 
 | 무엇을 하려고 오셨나요 | 어디로 |
 |---|---|
-| 처음 쓴다 | 아래 [사람이 쓰는 법](#사람이-쓰는-법) |
-| 올릴 문서를 만들고 있다 | [문서 규약](docs/CONVENTIONS.md) (파일명, 버전, 제목, 태그, 말투) |
-| HTML이나 덱을 만들고 있다 | [화면물 만들기](docs/HTML-DOCS.md) (뷰어에서 깨지지 않게) |
+| 꽂이를 처음 쓴다 | 아래 [사람이 쓰는 법](#사람이-쓰는-법) |
+| **문서를 만들려고 한다** | **[문서 제작 규약](docs/INDEX.md)** (유형별 정본 7종과 착수 점검) |
 | Claude Code로 올리고 싶다 | [스킬 설치](skills/shelf-upload/README.md) |
+| 규약을 기계로 검사하고 싶다 | [tools/check-doc.mjs](tools/README.md) |
+
+만들려는 것이 정해져 있으면 바로 그 문서로 갑니다.
+
+| | |
+|---|---|
+| 인쇄나 PDF 보고서 | [REPORT](docs/REPORT.md) |
+| 웹 스크롤 보고서, 공개 랜딩 | [WEB-REPORT](docs/WEB-REPORT.md) |
+| 발표 덱 | [DECK](docs/DECK.md) |
+| 회의록, 통화, 인터뷰 | [MEETING-NOTES](docs/MEETING-NOTES.md) |
+| 주간보고 뷰어 | [WEEKLY](docs/WEEKLY.md) |
+| 피드백 받는 검토 킷 | [REVIEW-KIT](docs/REVIEW-KIT.md) |
+| 콜드 메일 | [OUTREACH-MAIL](docs/OUTREACH-MAIL.md) |
+| 선택지를 나란히 놓기 | [COMPARISON](docs/COMPARISON.md) |
+| 공통 규약 (파일명, 말투, 표기) | [CONVENTIONS](docs/CONVENTIONS.md) |
+| HTML 기술 규약 (뷰어 함정) | [HTML-DOCS](docs/HTML-DOCS.md) |
 
 ---
 
