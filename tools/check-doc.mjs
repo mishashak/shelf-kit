@@ -11,8 +11,8 @@
  *
  * 종료코드: 오류(error)가 하나라도 있으면 1, 경고만 있으면 0.
  */
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, extname, basename } from "node:path";
+import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
+import { join, extname, basename, dirname, resolve } from "node:path";
 
 const argv = process.argv.slice(2);
 
@@ -135,8 +135,60 @@ rule("self-contained", "단일 HTML은 밖의 파일을 참조하지 않는다",
       }
       continue;
     }
+    // 옆에 그 파일이 실제로 있으면 zip 번들이다. 번들에서는 상대참조가 정상이고,
+    // 이미지를 파일로 두라는 것이 오히려 1-B절의 규약이다. 파일이 없을 때만 깨진 참조로 본다.
+    const clean = url.split(/[?#]/)[0];
+    let onDisk = false;
+    try { onDisk = existsSync(resolve(dirname(currentFile), decodeURIComponent(clean))); } catch { onDisk = false; }
+    if (onDisk) continue;
     add("error", lineOf(raw, m.index),
-      `상대참조: ${url.slice(0, 60)}. 인라인하거나 루트에 index.html을 둔 zip으로 올립니다`);
+      `상대참조인데 옆에 그 파일이 없습니다: ${url.slice(0, 60)}. 인라인하거나 루트에 index.html을 둔 zip으로 올립니다`);
+  }
+});
+
+// 크기와 캐시 ----------------------------------------------------
+/**
+ * 본문에 박은 이미지의 무게. 꽂이는 문서 본문을 `no-store`로, 번들 안 파일을 `max-age=3600`으로
+ * 내려준다. 그래서 본문에 박은 이미지는 문서를 열 때마다 다시 받고, 파일로 둔 이미지는 한 시간
+ * 캐시된다. 이 검사가 6MB(뷰어 기능 경계)가 아니라 200KB(여는 속도)에서 먼저 우는 이유다.
+ *
+ * 서버 경고(ingest.ts의 weightWarnings)는 본문 6MB를 넘을 때만 나온다. 그 아래에서는 본문의
+ * 99%가 이미지여도 아무 말이 없으므로, 그 구간에서는 여기가 유일한 그물이다.
+ */
+rule("inline-weight", "본문에 박은 이미지가 문서를 무겁게 하지 않는다", isHtml, (raw, masked, add) => {
+  const bytes = Buffer.byteLength(raw, "utf8");
+  let count = 0, inline = 0, png = 0, video = 0;
+  for (const m of raw.matchAll(/data:(image|video)\/([a-z0-9.+-]+);base64,([A-Za-z0-9+/=]+)/gi)) {
+    if (m[1].toLowerCase() === "video") { video++; continue; }
+    count++; inline += m[3].length;
+    if (m[2].toLowerCase() === "png") png++;
+  }
+  const KB = (n) => Math.round(n / 1024) + "KB";
+  const share = bytes ? Math.round((inline / bytes) * 100) : 0;
+  const REF = "(docs/HTML-DOCS.md 1-B)";
+
+  if (bytes > 6 * 1024 * 1024) {
+    add("error", 1,
+      `본문이 ${(bytes / 1024 / 1024).toFixed(1)}MB입니다. 6MB를 넘으면 뷰어에서 웹 편집과 읽기 배율이 꺼집니다 ${REF}`);
+  }
+  if (video > 0) {
+    add("error", 1,
+      `영상 ${video}개가 본문에 base64로 박혀 있습니다. 링크로 걸거나 zip 안 파일로 둡니다 ${REF}`);
+  }
+  if (!count) return;
+
+  if (bytes > 200 * 1024 && share >= 40) {
+    add("warn", 1,
+      `본문 ${KB(bytes)} 가운데 박힌 이미지 ${count}장이 ${KB(inline)}(${share}%)입니다. ` +
+      `본문은 열 때마다 다시 내려받습니다(no-store). zip 번들에 파일로 두면 한 시간 캐시됩니다 ${REF}`);
+  } else if (count > 2 && inline > 100 * 1024) {
+    add("warn", 1,
+      `박힌 이미지 ${count}장이 ${KB(inline)}입니다. 두 장을 넘거나 합계 100KB를 넘으면 zip 번들에 파일로 둡니다 ${REF}`);
+  }
+  if (png >= 3) {
+    add("warn", 1,
+      `박힌 이미지 가운데 PNG가 ${png}장입니다. WebP가 기본입니다(투명도를 지원하고 통상 4분의 1 크기). ` +
+      `PNG는 색이 몇 개 안 되는 도형과 로고에만 씁니다 ${REF}`);
   }
 });
 
