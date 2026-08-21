@@ -38,12 +38,14 @@ function collect(p, out = []) {
  * 다음 사람이 규칙이 없는 줄 안다.
  */
 function maskQuoted(text) {
-  const removed = { 코드블록: 0, 인라인코드: 0, URL: 0, HTML주석: 0 };
+  const removed = { 코드블록: 0, 인라인코드: 0, URL: 0, HTML주석: 0, 코드주석: 0 };
   let t = text;
   t = t.replace(/```[\s\S]*?```/g, (m) => { removed.코드블록++; return " ".repeat(m.length); });
   t = t.replace(/`[^`\n]*`/g, (m) => { removed.인라인코드++; return " ".repeat(m.length); });
   t = t.replace(/https?:\/\/[^\s)"'<>]+/g, (m) => { removed.URL++; return " ".repeat(m.length); });
   t = t.replace(/<!--[\s\S]*?-->/g, (m) => { removed.HTML주석++; return " ".repeat(m.length); });
+  // CSS·JS 블록 주석. 코드 주석은 한다체가 관용이라 말투 규칙의 대상이 아니다.
+  t = t.replace(/\/\*[\s\S]*?\*\//g, (m) => { removed.코드주석++; return " ".repeat(m.length); });
   return { text: t, removed };
 }
 
@@ -135,6 +137,12 @@ rule("self-contained", "단일 HTML은 밖의 파일을 참조하지 않는다",
       }
       continue;
     }
+    // <a href>는 자산이 아니라 링크다. 꽂이 안 다른 문서로 가는 /d/<slug> 같은 주소가 여기 걸리면
+    // 멀쩡한 문서가 매번 오류를 낸다. 자산으로 불리는 태그일 때만 본다.
+    const tag2 = raw.slice(Math.max(0, m.index - 200), m.index).match(/<\s*([a-zA-Z-]+)[^<>]*$/);
+    const name2 = tag2 ? tag2[1].toLowerCase() : "";
+    if (!["img", "script", "link", "source", "video", "audio", "iframe", "embed", "object"].includes(name2)) continue;
+
     // 옆에 그 파일이 실제로 있으면 zip 번들이다. 번들에서는 상대참조가 정상이고,
     // 이미지를 파일로 두라는 것이 오히려 1-B절의 규약이다. 파일이 없을 때만 깨진 참조로 본다.
     const clean = url.split(/[?#]/)[0];
