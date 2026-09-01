@@ -38,14 +38,30 @@ function collect(p, out = []) {
  * 다음 사람이 규칙이 없는 줄 안다.
  */
 function maskQuoted(text) {
-  const removed = { 코드블록: 0, 인라인코드: 0, URL: 0, HTML주석: 0, 코드주석: 0 };
+  const removed = { 코드블록: 0, 인라인코드: 0, URL: 0, HTML주석: 0, 코드주석: 0, 데이터블록: 0 };
   let t = text;
+  // 스크립트가 아닌 <script> 는 데이터다(application/json, text/template 등).
+  // 설문 응답이나 인용문을 여기 박아 두는데, 남이 쓴 문장이라 표기·말투 규칙의 대상이 아니다.
+  // 여는 태그와 닫는 태그는 남겨서 self-contained 같은 다른 규칙이 계속 보게 한다.
+  t = t.replace(/(<script\b[^>]*\btype\s*=\s*["'][^"']*["'][^>]*>)([\s\S]*?)(<\/script>)/gi,
+    (m, open, body, close) => {
+      if (/type\s*=\s*["']\s*(text\/javascript|application\/javascript|module)\s*["']/i.test(open)) return m;
+      removed.데이터블록++;
+      return open + " ".repeat(body.length) + close;
+    });
   t = t.replace(/```[\s\S]*?```/g, (m) => { removed.코드블록++; return " ".repeat(m.length); });
   t = t.replace(/`[^`\n]*`/g, (m) => { removed.인라인코드++; return " ".repeat(m.length); });
   t = t.replace(/https?:\/\/[^\s)"'<>]+/g, (m) => { removed.URL++; return " ".repeat(m.length); });
   t = t.replace(/<!--[\s\S]*?-->/g, (m) => { removed.HTML주석++; return " ".repeat(m.length); });
   // CSS·JS 블록 주석. 코드 주석은 한다체가 관용이라 말투 규칙의 대상이 아니다.
   t = t.replace(/\/\*[\s\S]*?\*\//g, (m) => { removed.코드주석++; return " ".repeat(m.length); });
+  // JS 한 줄 주석. <script> 안에서만 지운다. 본문에도 // 가 나올 수 있어 전역으로 지우면
+  // 멀쩡한 문장이 검사에서 빠진다. URL은 위에서 이미 지워져 https:// 가 걸릴 일은 없다.
+  t = t.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, (block) =>
+    block.replace(/^([^\n]*?)\/\/[^\n]*$/gm, (line, head) => {
+      removed.코드주석++;
+      return head + " ".repeat(line.length - head.length);
+    }));
   return { text: t, removed };
 }
 
